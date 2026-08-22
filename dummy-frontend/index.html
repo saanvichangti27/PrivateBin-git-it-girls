@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Strict CSP Policy injected for Step 2 -->
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self' http://127.0.0.1:8000; img-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self';">
+    <link rel="stylesheet" href="/assets/app.css">
+</head>
+
+<body>
+    <div id="app">
+        <h1>Dummy Frontend (Person 4 Testing)</h1>
+        <button id="createPasteBtn">Create Paste</button>
+        <button id="getPasteBtn">Get Paste test123</button>
+        <div id="output"></div>
+        <!-- Simulating an XSS attack to test if CSP blocks it -->
+        <!-- <script>
+            console.error("XSS ATTACK EXECUTED: If you see this in the logs, CSP failed!");
+            document.getElementById('output').innerText += " (XSS EXECUTED)";
+        </script> -->
+    </div>
+    <script type="module" src="/assets/app.js"></script>
+</body>
+
+</html>

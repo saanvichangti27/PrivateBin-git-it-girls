@@ -1,0 +1,18 @@
+body {
+    font-family: sans-serif;
+    padding: 2rem;
+    background-color: #1e1e1e;
+    color: #fff;
+}
+button {
+    padding: 0.5rem 1rem;
+    margin-right: 1rem;
+    cursor: pointer;
+}
+#output {
+    margin-top: 1rem;
+    padding: 1rem;
+    border: 1px solid #444;
+    background-color: #2a2a2a;
+    min-height: 50px;
+}
