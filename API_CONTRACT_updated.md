@@ -1,6 +1,6 @@
 # CloneFest 2.0 — Task 1: API Contract & Project Spec
 
-Status: MVP / core structure. Rate limiting, geo-detection, expiry enforcement, etc. are future additions (columns reserved, logic not yet implemented).
+Status: Implemented / Verified. Includes Redis storage with TTL expiration, burn-on-read (view limits), rate limiting (SlowAPI), and brute-force protection with failure auto-burn.
 
 ---
 
@@ -10,15 +10,14 @@ Status: MVP / core structure. Rate limiting, geo-detection, expiry enforcement, 
 |---|---|
 | Frontend | React + Vite |
 | Backend | FastAPI (Python) |
-| Database | SQLite |
+| Database / Store | **Redis** (with in-memory fallback for local development) |
+| Rate Limiting | SlowAPI |
 | Crypto | WebCrypto API (browser-native), implemented in `crypto.js` |
 | Repo structure | Monorepo: `/frontend`, `/backend` |
 
-Not decided yet / confirm separately: hosting, deployment method, ID generation library (see §5).
-
 ---
 
-## 2. Crypto Model (reference: `crypto.js`, already implemented by Person 1)
+## 2. Crypto Model (reference: `crypto.js`)
 
 - Key derivation: `deriveKeyFromCode(accessCode, salt)` → PBKDF2 (100,000 iterations, SHA-256) → 256-bit AES-GCM `CryptoKey`.
 - Encryption: `encryptSecret(plaintext, key)` → random 12-byte IV → returns `{iv, ciphertext}` (both base64).
@@ -26,115 +25,126 @@ Not decided yet / confirm separately: hosting, deployment method, ID generation 
 - `decryptFull(ciphertext, iv, salt, accessCode)` → re-derives key from access code + stored salt, decrypts.
 - `generateAccessCode()` → 8-character human-readable code (32-char alphabet, no `0/O/1/I`).
 
-**Important architectural consequence:** there is no `#fragment` key. The access code is the only secret, and it is never sent to or stored by the server. The **salt is not secret** — it must travel with the ciphertext (server stores and returns it), because the client needs it to re-derive the key.
-
-**Key rule for whoever writes backend/frontend code touching crypto:** do not assume function names, params, or return shapes beyond what's listed above — check `crypto.js` directly before calling into it, since I'm summarizing, not restating guaranteed-stable API surface.
+**Important architectural consequence:** The access code is the only secret, and it is never sent to or stored by the server. The **salt is not secret** — it travels with the ciphertext (server stores and returns it) so the client can re-derive the decryption key.
 
 ---
 
 ## 3. Link / Sharing Model
 
 - The shareable link encodes **only the paste ID**: `https://yourapp.com/paste/{id}`
-- The **access code is shared separately**, out of band (verbally, chat app, etc.) — same trust model as PrivateBin's optional password, but mandatory here.
-- Server never sees the access code, ever, at any endpoint.
+- The **access code is shared separately**, out of band (verbally, chat app, etc.).
+- Server never sees the access code at any endpoint.
 
 ---
 
-## 4. Database Schema (SQLite)
+## 4. Redis Storage Model
 
-Table: `pastes`
+Data is stored as Redis Hashes and String keys with native TTL expiration:
 
-| Column | Type | Notes |
+### Key: `paste:{id}` (Hash)
+| Field | Type | Notes |
 |---|---|---|
-| `id` | TEXT PRIMARY KEY | paste identifier, appears in the URL |
-| `ciphertext` | TEXT NOT NULL | base64, from `encryptFull` |
-| `iv` | TEXT NOT NULL | base64, from `encryptFull` |
-| `salt` | TEXT NOT NULL | base64, from `encryptFull` — NOT secret |
-| `created_at` | TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP | |
-| `expires_at` | TIMESTAMP NULL | reserved, unused in MVP |
-| `burned` | BOOLEAN NOT NULL DEFAULT 0 | reserved, unused in MVP |
+| `ciphertext` | String (base64) | Encrypted payload |
+| `iv` | String (base64) | Initialization vector |
+| `salt` | String (base64) | Salt for PBKDF2 derivation (public) |
+| `created_at` | String (ISO 8601) | Creation timestamp (UTC) |
+| `expires_at` | String (ISO 8601) | Expiration timestamp (UTC) |
+| `remaining_views` | Integer (`str(int)`) | Views remaining (`-1` = unlimited). Decremented on each read. |
+| `burn_threshold` | Integer (`str(int)`) | Max allowable failed decryption attempts before burning (default: `5`). |
 
-I'm not fully certain of exact SQLite/SQLAlchemy column-type syntax you'll end up using — verify against whatever ORM/driver Person 2 picks (e.g. SQLAlchemy, `sqlite3` directly).
+*Native Redis TTL is set via `EXPIRE paste:{id} {ttl}` so keys expire automatically.*
+
+### Key: `paste:{id}:failed` (String Counter)
+- Incremented on `POST /paste/{id}/report-failure`.
+- When counter reaches `burn_threshold`, the paste hash and failure counter are deleted (`burned`).
+- TTL matches the parent paste TTL.
 
 ---
 
-## 5. Paste ID Generation **[DECIDED]**
+## 5. Paste ID Generation
 
-Backend generates the ID at insert time (not the client), so ID generation and DB write stay atomic and trustless.
-
-- Method: short URL-safe random token (e.g. Python's `secrets.token_urlsafe()` or equivalent — verify exact current syntax/library before using) rather than a full UUID, for a shorter, cleaner link.
-- Backend should check for ID collisions on insert and retry if one occurs — very unlikely at this scale, but cheap to guard against.
+- Method: 8-character URL-safe alphanumeric string (`id_generator.py`).
+- Generated by backend at creation time.
 
 ---
 
 ## 6. API Routes
 
-### `POST /api/paste`
-Create a new paste.
-
-Request body:
-```json
-{
-  "ciphertext": "base64-string",
-  "iv": "base64-string",
-  "salt": "base64-string"
-}
-```
-
-Response `201 Created`:
-```json
-{
-  "id": "generated-paste-id"
-}
-```
-
-Errors:
-- `400` — missing/invalid field(s)
-
----
-
-### `GET /api/paste/{id}`
-Retrieve a paste for client-side decryption.
+### `GET /health`
+Returns API liveness and Redis connection state.
 
 Response `200 OK`:
 ```json
 {
-  "ciphertext": "base64-string",
-  "iv": "base64-string",
-  "salt": "base64-string"
+  "status": "ok",
+  "timestamp": "2026-08-22T13:30:00.000000+00:00",
+  "redis": "connected"
+}
+```
+
+---
+
+### `POST /paste`
+Create a new encrypted paste.
+
+Request body:
+```json
+{
+  "ciphertext": "AQIDBAUGBwgJCgsMDQ4PEA==",
+  "iv": "MDEyMzQ1Njc4OTFi",
+  "salt": "c2FsdHNhbHRzYWx0c2FsdA==",
+  "ttl": 3600,
+  "max_views": 5,
+  "burn_threshold": 3
+}
+```
+*Note: `ttl` (seconds, default 86400), `max_views` (optional int), `burn_threshold` (optional int, default 5).*
+
+Response `201 Created`:
+```json
+{
+  "id": "aD4HqhGi",
+  "expires_at": "2026-08-22T14:30:00.000000+00:00",
+  "remaining_views": 5,
+  "burn_threshold": 3
+}
+```
+
+---
+
+### `GET /paste/{id}`
+Retrieve a paste for client-side decryption. Decrements `remaining_views` and burns immediately if exhausted.
+
+Response `200 OK`:
+```json
+{
+  "id": "aD4HqhGi",
+  "ciphertext": "AQIDBAUGBwgJCgsMDQ4PEA==",
+  "iv": "MDEyMzQ1Njc4OTFi",
+  "salt": "c2FsdHNhbHRzYWx0c2FsdA==",
+  "remaining_views": 4,
+  "expires_at": "2026-08-22T14:30:00.000000+00:00"
 }
 ```
 
 Errors:
-- `404` — paste not found (or already burned, once burn-after-read is implemented)
+- `404 Not Found` — Paste does not exist, expired, or burned.
 
 ---
 
-### Error format (all endpoints)
+### `POST /paste/{id}/report-failure`
+Reports an unsuccessful client-side decryption attempt (wrong access code). Automatically burns the paste once `burn_threshold` is met.
+
+Response `200 OK`:
 ```json
 {
-  "error": "human-readable message"
+  "burned": false,
+  "attempts_remaining": 2,
+  "message": "Invalid access code attempt logged."
 }
 ```
 
 ---
 
 ## 7. CORS
-
-FastAPI backend must allow the Vite dev server origin (typically `http://localhost:5173` — confirm actual port Person 3 uses) in dev, and the deployed frontend origin in prod.
-
----
-
-## 8. Out of Scope for MVP (future work, schema already reserves space)
-
-- Rate limiting / auto-block
-- Geo-anomaly detection
-- Access history / security dashboard
-- Enforced expiration (`expires_at`) and burn-after-read (`burned`) logic — columns exist, enforcement logic does not yet
-- Server-side hash verification of access-code attempts (see project brief §5.3 for the reasoning — needs security review before implementing)
-
----
-
-## Open items still needing a decision (not blocking MVP start)
-
-- Deployment target
+FastAPI allows Vite dev server origins (`http://localhost:5173`, `http://127.0.0.1:5173`) and configured production `FRONTEND_ORIGIN`.
