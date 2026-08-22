@@ -58,11 +58,12 @@ I'm not fully certain of exact SQLite/SQLAlchemy column-type syntax you'll end u
 
 ---
 
-## 5. Paste ID Generation
+## 5. Paste ID Generation **[DECIDED]**
 
-**Decision needed, recommended default:** backend generates the ID at insert time (not the client), so ID generation and DB write stay atomic and trustless.
+Backend generates the ID at insert time (not the client), so ID generation and DB write stay atomic and trustless.
 
-- Suggested: short URL-safe random string (e.g. via Python's `secrets.token_urlsafe()`, or a `nanoid`-equivalent library) rather than a full UUID, for a shorter link. Verify current syntax/library availability yourself — not confirmed here.
+- Method: short URL-safe random token (e.g. Python's `secrets.token_urlsafe()` or equivalent — verify exact current syntax/library before using) rather than a full UUID, for a shorter, cleaner link.
+- Backend should check for ID collisions on insert and retry if one occurs — very unlikely at this scale, but cheap to guard against.
 
 ---
 
@@ -136,6 +137,4 @@ FastAPI backend must allow the Vite dev server origin (typically `http://localho
 
 ## Open items still needing a decision (not blocking MVP start)
 
-- Exact paste-ID generation method/library
 - Deployment target
-- Whether `salt` return format needs to change once IDs get shorter (unlikely, flagging for completeness)
