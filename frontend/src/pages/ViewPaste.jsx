@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { getPaste } from '../lib/api';
+import { getPaste, reportFailure } from '../lib/api';
 import { decryptFull } from '../lib/crypto';
 import { Key, Lock, Unlock, AlertTriangle, ShieldCheck, Copy, Check } from 'lucide-react';
 
@@ -49,7 +49,18 @@ export default function ViewPaste() {
       setDecryptedSecret(plaintext);
     } catch (err) {
       console.error(err);
-      setDecryptError('Incorrect access code or corrupted data.');
+      try {
+        const report = await reportFailure(id);
+        if (report.burned) {
+          setFetchError(report.message || 'Paste burned permanently due to excessive failed decryption attempts.');
+          setEncryptedData(null); // Clear data so it shows the error view
+        } else {
+          setDecryptError(`Incorrect access code. ${report.attempts_remaining} attempts remaining.`);
+        }
+      } catch (reportErr) {
+        console.error("Failed to report failure", reportErr);
+        setDecryptError('Incorrect access code or corrupted data.');
+      }
     } finally {
       setIsDecrypting(false);
     }
