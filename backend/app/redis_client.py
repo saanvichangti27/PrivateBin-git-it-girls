@@ -2,7 +2,11 @@ import os
 import time
 import logging
 from typing import Dict, Any, Optional
+from dotenv import load_dotenv
 import redis
+
+# Load environment variables from .env file
+load_dotenv(override=True)
 
 logger = logging.getLogger("uvicorn")
 
@@ -127,8 +131,8 @@ class RedisWrapper:
             self.client = redis.Redis.from_url(
                 self.redis_url,
                 decode_responses=True,
-                socket_timeout=1.0,
-                socket_connect_timeout=1.0,
+                socket_timeout=5.0,
+                socket_connect_timeout=5.0,
             )
             self.client.ping()
             self._redis_healthy = True
