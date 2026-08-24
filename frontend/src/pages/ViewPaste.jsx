@@ -6,11 +6,11 @@ import { Key, Lock, Unlock, AlertTriangle, ShieldCheck, Copy, Check } from 'luci
 
 export default function ViewPaste() {
   const { id } = useParams();
-  
+
   const [encryptedData, setEncryptedData] = useState(null);
   const [fetchError, setFetchError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  
+
   const [accessCode, setAccessCode] = useState('');
   const [isDecrypting, setIsDecrypting] = useState(false);
   const [decryptError, setDecryptError] = useState('');
@@ -38,7 +38,7 @@ export default function ViewPaste() {
 
     setIsDecrypting(true);
     setDecryptError('');
-    
+
     try {
       const plaintext = await decryptFull(
         encryptedData.ciphertext,
@@ -105,11 +105,11 @@ export default function ViewPaste() {
             <ShieldCheck size={18} />
             <span className="font-semibold text-sm tracking-wide uppercase">Decrypted Secret</span>
           </div>
-          <button 
+          <button
             onClick={copySecret}
             className="flex items-center gap-1.5 text-xs font-medium text-zinc-400 hover:text-white transition-colors"
           >
-            {copied ? <Check size={14} className="text-emerald-400"/> : <Copy size={14} />}
+            {copied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
             {copied ? 'Copied' : 'Copy'}
           </button>
         </div>

@@ -26,7 +26,7 @@ export async function createPaste({ ciphertext, iv, salt, maxViews, expiresInSec
 
 export async function getPaste(id) {
   const response = await fetch(`${API_BASE}/paste/${id}`);
-  
+
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     throw new Error(errorData.detail || 'Paste not found or has been destroyed.');

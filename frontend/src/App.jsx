@@ -15,7 +15,7 @@ function App() {
               End-to-end encrypted secret sharing. Links self-destruct.
             </p>
           </header>
-          
+
           <main>
             <Routes>
               <Route path="/" element={<CreatePaste />} />

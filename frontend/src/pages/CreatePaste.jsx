@@ -7,7 +7,7 @@ export default function CreatePaste() {
   const [secret, setSecret] = useState('');
   const [maxViews, setMaxViews] = useState('0'); // 0 = unlimited
   const [expiresIn, setExpiresIn] = useState('0'); // 0 = never
-  
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [createdData, setCreatedData] = useState(null); // { id, code, link }
   const [copiedLink, setCopiedLink] = useState(false);
@@ -71,11 +71,11 @@ export default function CreatePaste() {
               <span className="flex-1 font-mono text-emerald-400 text-sm overflow-hidden text-ellipsis whitespace-nowrap">
                 {createdData.link}
               </span>
-              <button 
+              <button
                 onClick={() => copyToClipboard(createdData.link, setCopiedLink)}
                 className="ml-4 flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-4 py-2 rounded-md transition-colors text-sm font-medium"
               >
-                {copiedLink ? <Check size={16} className="text-emerald-400"/> : <Copy size={16} />}
+                {copiedLink ? <Check size={16} className="text-emerald-400" /> : <Copy size={16} />}
                 {copiedLink ? 'Copied' : 'Copy'}
               </button>
             </div>
@@ -90,19 +90,19 @@ export default function CreatePaste() {
               <span className="flex-1 font-mono font-bold text-amber-400 text-xl tracking-widest">
                 {createdData.code}
               </span>
-              <button 
+              <button
                 onClick={() => copyToClipboard(createdData.code, setCopiedCode)}
                 className="ml-4 flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-4 py-2 rounded-md transition-colors text-sm font-medium"
               >
-                {copiedCode ? <Check size={16} className="text-emerald-400"/> : <Copy size={16} />}
+                {copiedCode ? <Check size={16} className="text-emerald-400" /> : <Copy size={16} />}
                 {copiedCode ? 'Copied' : 'Copy'}
               </button>
             </div>
           </div>
         </div>
-        
+
         <div className="mt-8 pt-6 border-t border-zinc-800 text-center">
-          <button 
+          <button
             onClick={() => { setSecret(''); setCreatedData(null); }}
             className="text-zinc-400 hover:text-white transition-colors text-sm"
           >
