@@ -7,18 +7,22 @@ from slowapi.errors import RateLimitExceeded
 
 from app.routes.paste import router as paste_router, limiter
 from app.redis_client import get_redis
+from app.security import SecurityBlocklistMiddleware
 
 app = FastAPI(
     title="PrivateBin Modernization API",
-    description="FastAPI + Redis Backend for Secure Client-Side Secret Sharing",
-    version="1.0.0",
+    description="FastAPI + Redis Backend for Secure Client-Side Secret Sharing with Advanced Security Controls",
+    version="1.1.0",
 )
 
 # Register slowapi limiter and rate-limit exceeded handler.
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# CORS — allow the Vite dev server and the configured production origin.
+# Security Blocklist Middleware (drops blocked IPs)
+app.add_middleware(SecurityBlocklistMiddleware)
+
+# CORS — allow Vite dev server and configured production origin.
 FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "http://localhost:5173")
 app.add_middleware(
     CORSMiddleware,

@@ -22,6 +22,8 @@ class InMemoryStore:
     def __init__(self):
         self.hashes: Dict[str, Dict[str, Any]] = {}
         self.counters: Dict[str, int] = {}
+        self.strings: Dict[str, str] = {}
+        self.lists: Dict[str, list] = {}
         self.ttls: Dict[str, float] = {}
 
     def _is_expired(self, key: str) -> bool:
@@ -50,10 +52,6 @@ class InMemoryStore:
         return self.hgetall(key).get(field)
 
     def hincrby(self, key: str, field: str, amount: int = 1) -> int:
-        # FIXED: real Redis HINCRBY treats a missing key/field as 0,
-        # creates it, applies the increment, and returns the new value.
-        # The old version returned 0 and wrote nothing when the field didn't
-        # exist yet, silently no-oping instead of creating it.
         self._cleanup_if_expired(key)
         if key not in self.hashes:
             self.hashes[key] = {}
@@ -62,17 +60,56 @@ class InMemoryStore:
         self.hashes[key][field] = str(updated)
         return updated
 
+    def set(self, key: str, value: Any) -> bool:
+        self._cleanup_if_expired(key)
+        self.strings[key] = str(value)
+        return True
+
+    def setex(self, key: str, time_seconds: int, value: Any) -> bool:
+        self.set(key, value)
+        self.expire(key, time_seconds)
+        return True
+
+    def get(self, key: str) -> Optional[str]:
+        self._cleanup_if_expired(key)
+        return self.strings.get(key)
+
+    def rpush(self, key: str, *values: str) -> int:
+        self._cleanup_if_expired(key)
+        if key not in self.lists:
+            self.lists[key] = []
+        for val in values:
+            self.lists[key].append(str(val))
+        return len(self.lists[key])
+
+    def lrange(self, key: str, start: int, end: int) -> list:
+        self._cleanup_if_expired(key)
+        items = self.lists.get(key, [])
+        if end == -1:
+            return items[start:]
+        return items[start : end + 1]
+
+    def ltrim(self, key: str, start: int, end: int) -> bool:
+        self._cleanup_if_expired(key)
+        if key in self.lists:
+            if end == -1:
+                self.lists[key] = self.lists[key][start:]
+            else:
+                self.lists[key] = self.lists[key][start : end + 1]
+        return True
+
     def expire(self, key: str, time_seconds: int) -> bool:
         self.ttls[key] = time.time() + time_seconds
         return True
 
     def ttl(self, key: str) -> int:
-        # FIXED: match real Redis TTL semantics —
-        #   -2 => key does not exist
-        #   -1 => key exists but has no expiry set
-        #   N  => seconds remaining
         self._cleanup_if_expired(key)
-        key_exists = key in self.hashes or key in self.counters
+        key_exists = (
+            key in self.hashes
+            or key in self.counters
+            or key in self.strings
+            or key in self.lists
+        )
         if not key_exists:
             return -2
         expire_time = self.ttls.get(key)
@@ -91,16 +128,28 @@ class InMemoryStore:
     def delete(self, *keys: str) -> int:
         count = 0
         for k in keys:
-            if k in self.hashes or k in self.counters:
+            if (
+                k in self.hashes
+                or k in self.counters
+                or k in self.strings
+                or k in self.lists
+            ):
                 self.hashes.pop(k, None)
                 self.counters.pop(k, None)
+                self.strings.pop(k, None)
+                self.lists.pop(k, None)
                 self.ttls.pop(k, None)
                 count += 1
         return count
 
     def exists(self, key: str) -> int:
         self._cleanup_if_expired(key)
-        return 1 if (key in self.hashes or key in self.counters) else 0
+        return 1 if (
+            key in self.hashes
+            or key in self.counters
+            or key in self.strings
+            or key in self.lists
+        ) else 0
 
 
 class RedisWrapper:
@@ -149,12 +198,6 @@ class RedisWrapper:
         return (time.time() - self._last_failure_time) >= RECONNECT_RETRY_SECONDS
 
     def _use_fallback(self) -> bool:
-        """Decide once per call which backend to use.
-
-        If Redis was unhealthy and the retry window has elapsed, attempt
-        to reconnect *before* deciding, so a single logical operation is
-        never split across two backends.
-        """
         if not self._redis_healthy and self._should_retry_redis():
             self._connect()
         return not self._redis_healthy
@@ -172,7 +215,6 @@ class RedisWrapper:
                 )
                 self._redis_healthy = False
                 self._last_failure_time = time.time()
-                # Fall through to in-memory store for THIS call.
 
         return getattr(self.fallback, method_name)(*args, **kwargs)
 
@@ -188,6 +230,31 @@ class RedisWrapper:
     def hincrby(self, key: str, field: str, amount: int = 1) -> int:
         return self._call("hincrby", key, field, amount)
 
+    def set(self, key: str, value: Any):
+        return self._call("set", key, value)
+
+    def setex(self, key: str, time_seconds: int, value: Any):
+        return self._call("setex", key, time_seconds, value)
+
+    def get(self, key: str) -> Optional[str]:
+        return self._call("get", key)
+
+    def rpush(self, key: str, *values: str) -> int:
+        if not self._use_fallback() and self.client:
+            try:
+                return self.client.rpush(key, *values)
+            except Exception as e:
+                logger.warning(f"Redis call 'rpush' failed ({e}). Falling back.")
+                self._redis_healthy = False
+                self._last_failure_time = time.time()
+        return self.fallback.rpush(key, *values)
+
+    def lrange(self, key: str, start: int, end: int) -> list:
+        return self._call("lrange", key, start, end)
+
+    def ltrim(self, key: str, start: int, end: int) -> bool:
+        return self._call("ltrim", key, start, end)
+
     def expire(self, key: str, time_seconds: int):
         return self._call("expire", key, time_seconds)
 
@@ -198,9 +265,6 @@ class RedisWrapper:
         return self._call("incr", key)
 
     def delete(self, *keys: str) -> int:
-        # FIXED: _call(*args) would bundle the keys as a tuple arg.
-        # Real redis-py delete(*keys) and InMemoryStore.delete(*keys) both
-        # expect them unpacked — call directly to keep the *-unpacking intact.
         if not self._use_fallback() and self.client:
             try:
                 return self.client.delete(*keys)
