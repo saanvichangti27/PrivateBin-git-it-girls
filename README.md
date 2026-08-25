@@ -78,20 +78,3 @@ The application strictly preserves the zero-knowledge security standard by using
 
 ---
 
-## 📡 API Contract
-
-Refer to [API_CONTRACT_updated.md](API_CONTRACT_updated.md) for full request/response schemas. Summarized endpoints are listed below:
-
-| Endpoint | Method | Description | Rate Limit |
-|---|---|---|---|
-| `/paste` | `POST` | Create a new encrypted paste. Returns `id`, `admin_token`, `expires_at`, etc. | 30 req/min |
-| `/paste/{id}` | `GET` | Retrieve ciphertext, IV, and salt for a paste. | 60 req/min |
-| `/paste/{id}/report-failure` | `POST` | Report a decryption failure (triggers burn threshold check). | 15 req/min |
-| `/paste/{id}/analytics` | `GET` | Retrieve paste analytics and access logs (requires `admin_token`). | Unlimited |
-| `/paste/{id}/unlock` | `POST` | Unlock a paste that was locked due to failure (requires `admin_token`). | Unlimited |
-| `/paste/{id}` | `DELETE` | Manually burn/delete a paste (requires `admin_token`). | Unlimited |
-| `/health` | `GET` | Returns backend liveness and database connection status. | Bypass |
-
----
-
-
