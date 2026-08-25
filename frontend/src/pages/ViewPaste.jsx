@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { getPaste, reportFailure } from '../lib/api';
 import { decryptFull } from '../lib/crypto';
-import { Key, Lock, Unlock, AlertTriangle, ShieldCheck, Copy, Check } from 'lucide-react';
+import { Key, Lock, Unlock, AlertTriangle, ShieldCheck, Copy, Check, File, Download } from 'lucide-react';
 
 export default function ViewPaste() {
   const { id } = useParams();
@@ -66,8 +66,8 @@ export default function ViewPaste() {
     }
   };
 
-  const copySecret = () => {
-    navigator.clipboard.writeText(decryptedSecret);
+  const copySecret = (text) => {
+    navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -96,28 +96,110 @@ export default function ViewPaste() {
     );
   }
 
+  // Try to parse decrypted payload as JSON
+  let decryptedPayload = null;
+  try {
+    if (decryptedSecret) {
+      decryptedPayload = JSON.parse(decryptedSecret);
+    }
+  } catch (err) {
+    // Falls back to string representation (older/legacy pastes)
+    decryptedPayload = { text: decryptedSecret, files: null };
+  }
+
+  // Normalize single file and multiple files to a single array
+  let files = [];
+  if (decryptedPayload) {
+    if (Array.isArray(decryptedPayload.files)) {
+      files = decryptedPayload.files;
+    } else if (decryptedPayload.file) {
+      files = [decryptedPayload.file];
+    }
+  }
+
   // Successfully Decrypted View
   if (decryptedSecret) {
+    const textToShow = decryptedPayload ? decryptedPayload.text : decryptedSecret;
+
     return (
-      <div className="bg-zinc-900 border border-emerald-900/50 rounded-xl overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-300">
-        <div className="bg-zinc-950/50 px-6 py-4 border-b border-zinc-800 flex items-center justify-between">
-          <div className="flex items-center gap-2 text-emerald-400">
-            <ShieldCheck size={18} />
-            <span className="font-semibold text-sm tracking-wide uppercase">Decrypted Secret</span>
+      <div className="space-y-6 max-w-4xl w-full">
+        <div className="bg-zinc-900 border border-emerald-900/50 rounded-xl overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-300">
+          <div className="bg-zinc-950/50 px-6 py-4 border-b border-zinc-800 flex items-center justify-between">
+            <div className="flex items-center gap-2 text-emerald-400">
+              <ShieldCheck size={18} />
+              <span className="font-semibold text-sm tracking-wide uppercase">Decrypted Secret</span>
+            </div>
+            {textToShow && (
+              <button 
+                onClick={() => copySecret(textToShow)}
+                className="flex items-center gap-1.5 text-xs font-medium text-zinc-400 hover:text-white transition-colors"
+              >
+                {copied ? <Check size={14} className="text-emerald-400"/> : <Copy size={14} />}
+                {copied ? 'Copied' : 'Copy'}
+              </button>
+            )}
           </div>
-          <button 
-            onClick={copySecret}
-            className="flex items-center gap-1.5 text-xs font-medium text-zinc-400 hover:text-white transition-colors"
-          >
-            {copied ? <Check size={14} className="text-emerald-400"/> : <Copy size={14} />}
-            {copied ? 'Copied' : 'Copy'}
-          </button>
+          {textToShow ? (
+            <div className="p-6">
+              <pre className="font-sans whitespace-pre-wrap text-zinc-200 text-base leading-relaxed">
+                {textToShow}
+              </pre>
+            </div>
+          ) : (
+            <div className="p-6 text-zinc-500 italic text-center text-sm">
+              No text message attached.
+            </div>
+          )}
         </div>
-        <div className="p-6">
-          <pre className="font-sans whitespace-pre-wrap text-zinc-200 text-base leading-relaxed">
-            {decryptedSecret}
-          </pre>
-        </div>
+
+        {/* Attached Decrypted Files */}
+        {files.length > 0 && (
+          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-300 space-y-6">
+            <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider">
+              Attached Secure Files ({files.length})
+            </h3>
+            
+            <div className="space-y-6">
+              {files.map((file, idx) => (
+                <div key={idx} className="space-y-4 border-b border-zinc-850 last:border-b-0 pb-6 last:pb-0">
+                  <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-zinc-950 border border-zinc-800 rounded-lg p-4">
+                    <div className="flex items-center gap-3 overflow-hidden">
+                      <div className="p-3 bg-emerald-500/10 text-emerald-400 rounded-md">
+                        <File size={24} />
+                      </div>
+                      <div className="overflow-hidden">
+                        <p className="text-sm font-semibold text-zinc-200 truncate">{file.name}</p>
+                        <p className="text-xs text-zinc-500">
+                          {(file.size / 1024 / 1024).toFixed(2)} MB • {file.type || 'Unknown Type'}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <a
+                      href={file.data}
+                      download={file.name}
+                      className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2 px-4 rounded-lg transition-colors text-sm w-full md:w-auto cursor-pointer"
+                    >
+                      <Download size={16} />
+                      Download File
+                    </a>
+                  </div>
+
+                  {/* Render Preview if Image */}
+                  {file.type && file.type.startsWith('image/') && (
+                    <div className="border border-zinc-800 rounded-lg overflow-hidden bg-zinc-950/40 p-2 flex justify-center">
+                      <img
+                        src={file.data}
+                        alt={file.name}
+                        className="max-h-96 object-contain rounded-md"
+                      />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     );
   }
