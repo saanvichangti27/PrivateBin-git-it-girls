@@ -128,11 +128,19 @@ class RedisWrapper:
     def _connect(self):
         """(Re)attempt to establish a real Redis connection."""
         try:
+            # ssl_cert_reqs=None is required for managed TLS Redis services
+            # (e.g. Upstash, Redis Cloud) that use rediss:// URLs.
+            ssl_kwargs = (
+                {"ssl_cert_reqs": None}
+                if self.redis_url.startswith("rediss://")
+                else {}
+            )
             self.client = redis.Redis.from_url(
                 self.redis_url,
                 decode_responses=True,
                 socket_timeout=5.0,
                 socket_connect_timeout=5.0,
+                **ssl_kwargs,
             )
             self.client.ping()
             self._redis_healthy = True
