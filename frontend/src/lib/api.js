@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:8000';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 export async function createPaste({ ciphertext, iv, salt, maxViews, expiresInSeconds }) {
   const response = await fetch(`${API_BASE}/paste`, {
@@ -21,7 +21,7 @@ export async function createPaste({ ciphertext, iv, salt, maxViews, expiresInSec
     throw new Error(errorData.detail || 'Failed to create secret link');
   }
 
-  return response.json(); // returns { id, creator_token, expires_at, remaining_views, burn_threshold }
+  return response.json(); // returns { id, admin_token, expires_at, remaining_views, burn_threshold }
 }
 
 export async function getPaste(id) {
@@ -34,7 +34,7 @@ export async function getPaste(id) {
     throw err;
   }
 
-  return response.json(); // returns { id, ciphertext, iv, salt, remaining_views, expires_at, is_locked }
+  return response.json();
 }
 
 export async function reportFailure(id) {
@@ -49,7 +49,35 @@ export async function reportFailure(id) {
     throw new Error('Failed to report decryption failure');
   }
 
-  return response.json(); // returns { burned, attempts_remaining, message }
+  return response.json();
+}
+
+export async function getAnalytics(id, adminToken) {
+  const response = await fetch(`${API_BASE}/paste/${id}/analytics?admin_token=${adminToken}`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch analytics');
+  }
+  return response.json();
+}
+
+export async function unlockPaste(id, adminToken) {
+  const response = await fetch(`${API_BASE}/paste/${id}/unlock?admin_token=${adminToken}`, {
+    method: 'POST'
+  });
+  if (!response.ok) {
+    throw new Error('Failed to unlock paste');
+  }
+  return response.json();
+}
+
+export async function deletePaste(id, adminToken) {
+  const response = await fetch(`${API_BASE}/paste/${id}?admin_token=${adminToken}`, {
+    method: 'DELETE'
+  });
+  if (!response.ok) {
+    throw new Error('Failed to burn paste');
+  }
+  return response.json();
 }
 
 export async function getAnalytics(id, token) {

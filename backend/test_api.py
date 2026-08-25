@@ -149,17 +149,11 @@ def run_tests():
     check("Failure 2 recorded", f2.json()["burned"] is False)
 
     f3 = client.post(f"/paste/{fail_id}/report-failure")
-    check("Failure 3 triggers auto-lock defense", f3.json()["burned"] is False)
+    check("Attempt 3: locked=True", f3.json()["locked"] is True)
+    check("Attempt 3: 0 remaining", f3.json()["attempts_remaining"] == 0)
 
-    # Reading should now be locked
-    locked_read = client.get(f"/paste/{fail_id}")
-    check("Paste auto-locked after 3 failures -> returns 423", locked_read.status_code == 423)
-
-    f4 = client.post(f"/paste/{fail_id}/report-failure")
-    check("Failure 4 (Threshold reached) permanently burns paste", f4.json()["burned"] is True)
-
-    read_burned = client.get(f"/paste/{fail_id}")
-    check("Burned paste returns 404", read_burned.status_code == 404)
+    r = client.get(f"/paste/{fail_id}")
+    check("Locked paste is 403", r.status_code == 403)
     print()
 
     # -----------------------------------------------------------------------

@@ -60,3 +60,19 @@ Once suspicious action is detected, the system automatically takes defensive mea
     *   If an IP crosses the threshold for suspicious activity (e.g., consistent brute-force attempts), add the IP to a Redis "blocklist" with a TTL (Time-To-Live, e.g., 1 hour).
     *   Middleware should check the blocklist before processing any request; if the IP is blocked, immediately drop the request (return HTTP `403 Forbidden` or drop the connection entirely).
 *   **Link Locking:** If a specific link is under targeted attack (e.g., massive traffic spike attempting to guess a password), the system can temporarily set the link status to `LOCKED`. This prevents any further access even with correct credentials, requiring the creator to manually unlock it from their dashboard.
+
+## 6. Secure File Sharing (File Input)
+### Description
+In addition to text, users can securely share files. Files are encrypted on the client-side before being uploaded and shared via a link, ensuring zero-knowledge privacy similar to text pastes.
+
+### Implementation Details
+*   **Database/Storage:** 
+    *   Store the encrypted file blobs in a secure storage system (e.g., cloud storage bucket or local file system), keyed by a unique file identifier.
+    *   Update the `Paste` or `Link` table to include fields for file metadata, such as an encrypted `file_name` and a `file_id` referencing the stored blob.
+*   **Backend:**
+    *   Create streaming endpoints for uploading and downloading encrypted file data to handle large files efficiently.
+    *   Apply the existing expiration (`expires_at`) and view limit (`max_views`) logic to the file storage records, ensuring the file blob is permanently deleted when the link expires or the view limit is reached.
+*   **Frontend:**
+    *   Add a file upload input area to the paste creation form (e.g., drag-and-drop zone).
+    *   Use the `FileReader` API to read the file locally, encrypt the data using the same client-side cryptographic keys and algorithms used for text, and then upload the encrypted payload.
+    *   For retrieval, download the encrypted blob, decrypt it locally in the browser, and present it as a downloadable file to the user.

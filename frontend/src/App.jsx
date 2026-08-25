@@ -6,16 +6,16 @@ import Dashboard from './pages/Dashboard';
 function App() {
   return (
     <Router>
-      <div className="min-h-screen bg-zinc-950 text-zinc-50 flex flex-col items-center py-10 px-4 sm:px-6 lg:px-8">
-        <div className="w-full max-w-4xl">
-          <header className="mb-8 text-center">
-            <Link to="/" className="inline-block group">
-              <h1 className="text-4xl font-extrabold tracking-tight text-white mb-1.5 transition-transform group-hover:scale-[1.02]">
+      <div className="min-h-screen bg-zinc-950 text-zinc-50 flex flex-col items-center py-12 px-4 sm:px-6 lg:px-8">
+        <div className="w-full max-w-3xl">
+          <header className="mb-10 text-center">
+            <Link to="/" className="inline-block hover:opacity-80 transition-opacity">
+              <h1 className="text-4xl font-extrabold tracking-tight text-white mb-2">
                 <span className="text-emerald-500">Secure</span>Share
               </h1>
             </Link>
-            <p className="text-zinc-400 text-xs sm:text-sm">
-              End-to-end client-side encrypted secret sharing with real-time audit telemetry & access control.
+            <p className="text-zinc-400 text-sm">
+              End-to-end encrypted secret sharing. Links self-destruct.
             </p>
           </header>
 

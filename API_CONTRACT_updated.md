@@ -141,6 +141,25 @@ Errors:
 
 ---
 
+### `DELETE /paste/{id}`
+Burn (delete) a paste on demand using the admin token received at creation.
+
+Query Parameters:
+- `admin_token`: The `admin_token` string provided when the paste was created.
+
+Response `200 OK`:
+```json
+{
+  "message": "Paste burned successfully"
+}
+```
+
+Errors:
+- `404` — paste not found
+- `401` — invalid admin token
+
+---
+
 ### Error format (all endpoints)
 ```json
 {
