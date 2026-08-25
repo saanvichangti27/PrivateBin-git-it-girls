@@ -22,7 +22,7 @@ from app.security import (
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
 
-def create_paste_logic(payload: PasteCreate, redis_db: RedisWrapper) -> PasteCreateResponse:
+def create_paste_logic(payload: PasteCreate, request: Request, redis_db: RedisWrapper) -> PasteCreateResponse:
     """Store a new encrypted paste in Redis with TTL, view limit, and burn threshold."""
     paste_id = generate_paste_id(8)
     creator_token = secrets.token_urlsafe(16)

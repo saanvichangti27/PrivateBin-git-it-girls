@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { getPaste, reportFailure } from '../lib/api';
 import { decryptFull } from '../lib/crypto';
-import { Key, Lock, Unlock, AlertTriangle, ShieldCheck, Copy, Check, File, Download } from 'lucide-react';
+import { Key, Lock, Unlock, AlertTriangle, ShieldCheck, Copy, Check, File, Download, ArrowUpRight, Eye } from 'lucide-react';
 
 export default function ViewPaste() {
   const { id } = useParams();
@@ -59,15 +59,14 @@ export default function ViewPaste() {
         const report = await reportFailure(id);
         if (report.burned) {
           setFetchError(report.message || 'Paste burned permanently due to excessive failed decryption attempts.');
-          setEncryptedData(null); // Clear data so it shows the error view
+          setEncryptedData(null); 
         } else if (report.locked) {
           setFetchError(report.message || 'Paste locked temporarily due to excessive failed decryption attempts.');
           setEncryptedData(null);
         } else {
-          setDecryptError(`Incorrect access code. ${report.attempts_remaining} attempts remaining before auto-burn.`);
+          setDecryptError(`Incorrect code. ${report.attempts_remaining} attempts remaining before auto-burn.`);
         }
       } catch (reportErr) {
-        console.error('Failed to report failure', reportErr);
         setDecryptError('Incorrect access code or corrupted payload.');
       }
     } finally {
@@ -84,39 +83,36 @@ export default function ViewPaste() {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-48">
-        <div className="animate-pulse text-zinc-500 font-medium">Retrieving secure encrypted payload...</div>
+        <div className="animate-pulse text-gray-500 font-bold tracking-widest text-sm uppercase">Loading secure payload...</div>
       </div>
     );
   }
 
-  // Handle Fetch Errors (Expired, Not Found, View Limit, Locked)
+  // Handle Fetch Errors
   if (fetchError) {
     return (
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-8 shadow-2xl text-center max-w-md mx-auto animate-in fade-in">
-        <div className="inline-flex items-center justify-center w-16 h-16 bg-red-500/10 text-red-400 rounded-full mb-6">
+      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-8 shadow-sm text-center max-w-md mx-auto mt-8">
+        <div className="inline-flex items-center justify-center w-16 h-16 bg-red-50 text-red-500 rounded-full mb-6">
           <AlertTriangle size={32} />
         </div>
-        <h2 className="text-2xl font-bold text-white mb-2">Secret Unavailable</h2>
-        <p className="text-zinc-400 text-sm mb-6">{fetchError}</p>
-        <Link to="/" className="inline-block text-emerald-500 hover:text-emerald-400 font-medium text-sm transition-colors">
+        <h2 className="text-2xl font-bold text-[#1a1a1a] mb-2">Secret Unavailable</h2>
+        <p className="text-gray-500 text-sm mb-6">{fetchError}</p>
+        <Link to="/" className="inline-block text-[#3733A5] hover:underline font-bold text-sm">
           Create a new secret &rarr;
         </Link>
       </div>
     );
   }
 
-  // Try to parse decrypted payload as JSON
   let decryptedPayload = null;
   try {
     if (decryptedSecret) {
       decryptedPayload = JSON.parse(decryptedSecret);
     }
   } catch (err) {
-    // Falls back to string representation (older/legacy pastes)
     decryptedPayload = { text: decryptedSecret, files: null };
   }
 
-  // Normalize single file and multiple files to a single array
   let files = [];
   if (decryptedPayload) {
     if (Array.isArray(decryptedPayload.files)) {
@@ -131,31 +127,38 @@ export default function ViewPaste() {
     const textToShow = decryptedPayload ? decryptedPayload.text : decryptedSecret;
 
     return (
-      <div className="space-y-6 max-w-4xl w-full">
-        <div className="bg-zinc-900 border border-emerald-900/50 rounded-xl overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-300">
-          <div className="bg-zinc-950/50 px-6 py-4 border-b border-zinc-800 flex items-center justify-between">
-            <div className="flex items-center gap-2 text-emerald-400">
+      <div className="w-full max-w-3xl mx-auto mt-4 space-y-8">
+        <div className="text-center mb-8">
+           <p className="text-xs font-bold text-green-600 tracking-widest uppercase mb-4">
+             ● SECRET DECRYPTED
+           </p>
+           <h2 className="text-3xl font-extrabold text-[#1a1a1a] mb-2 tracking-tight">View your secure data</h2>
+        </div>
+
+        <div className="bg-white border border-[#E5E7EB] rounded-2xl overflow-hidden shadow-sm">
+          <div className="bg-[#F9FAFB] px-6 py-4 border-b border-[#E5E7EB] flex items-center justify-between">
+            <div className="flex items-center gap-2 text-[#3733A5]">
               <ShieldCheck size={18} />
-              <span className="font-semibold text-sm tracking-wide uppercase">Decrypted Secret</span>
+              <span className="font-bold text-xs tracking-widest uppercase">Decrypted Secret</span>
             </div>
             {textToShow && (
               <button 
                 onClick={() => copySecret(textToShow)}
-                className="flex items-center gap-1.5 text-xs font-medium text-zinc-400 hover:text-white transition-colors"
+                className="flex items-center gap-1.5 text-xs font-bold text-gray-500 hover:text-[#1a1a1a] transition-colors"
               >
-                {copied ? <Check size={14} className="text-emerald-400"/> : <Copy size={14} />}
+                {copied ? <Check size={14} className="text-green-500"/> : <Copy size={14} />}
                 {copied ? 'Copied' : 'Copy'}
               </button>
             )}
           </div>
           {textToShow ? (
-            <div className="p-6">
-              <pre className="font-sans whitespace-pre-wrap text-zinc-200 text-base leading-relaxed">
+            <div className="p-8">
+              <pre className="font-mono whitespace-pre-wrap text-[#1a1a1a] text-sm leading-relaxed">
                 {textToShow}
               </pre>
             </div>
           ) : (
-            <div className="p-6 text-zinc-500 italic text-center text-sm">
+            <div className="p-8 text-gray-400 italic text-center text-sm font-medium">
               No text message attached.
             </div>
           )}
@@ -163,22 +166,22 @@ export default function ViewPaste() {
 
         {/* Attached Decrypted Files */}
         {files.length > 0 && (
-          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-300 space-y-6">
-            <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider">
+          <div className="bg-white border border-[#E5E7EB] rounded-2xl p-8 shadow-sm space-y-6">
+            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">
               Attached Secure Files ({files.length})
             </h3>
             
             <div className="space-y-6">
               {files.map((file, idx) => (
-                <div key={idx} className="space-y-4 border-b border-zinc-850 last:border-b-0 pb-6 last:pb-0">
-                  <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-zinc-950 border border-zinc-800 rounded-lg p-4">
+                <div key={idx} className="space-y-4 border-b border-gray-100 last:border-b-0 pb-6 last:pb-0">
+                  <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg p-4">
                     <div className="flex items-center gap-3 overflow-hidden">
-                      <div className="p-3 bg-emerald-500/10 text-emerald-400 rounded-md">
+                      <div className="p-3 bg-blue-50 text-[#3733A5] rounded-md">
                         <File size={24} />
                       </div>
                       <div className="overflow-hidden">
-                        <p className="text-sm font-semibold text-zinc-200 truncate">{file.name}</p>
-                        <p className="text-xs text-zinc-500">
+                        <p className="text-sm font-bold text-[#1a1a1a] truncate">{file.name}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">
                           {(file.size / 1024 / 1024).toFixed(2)} MB • {file.type || 'Unknown Type'}
                         </p>
                       </div>
@@ -187,20 +190,19 @@ export default function ViewPaste() {
                     <a
                       href={file.data}
                       download={file.name}
-                      className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2 px-4 rounded-lg transition-colors text-sm w-full md:w-auto cursor-pointer"
+                      className="flex items-center justify-center gap-2 bg-[#1a1a1a] hover:bg-[#333333] text-white font-bold py-2 px-6 rounded-md transition-colors text-xs w-full md:w-auto cursor-pointer"
                     >
-                      <Download size={16} />
-                      Download File
+                      <Download size={14} />
+                      Download
                     </a>
                   </div>
 
-                  {/* Render Preview if Image */}
                   {file.type && file.type.startsWith('image/') && (
-                    <div className="border border-zinc-800 rounded-lg overflow-hidden bg-zinc-950/40 p-2 flex justify-center">
+                    <div className="border border-[#E5E7EB] rounded-lg overflow-hidden bg-gray-50 p-2 flex justify-center">
                       <img
                         src={file.data}
                         alt={file.name}
-                        className="max-h-96 object-contain rounded-md"
+                        className="max-h-96 object-contain rounded-md shadow-sm"
                       />
                     </div>
                   )}
@@ -215,57 +217,97 @@ export default function ViewPaste() {
 
   // Awaiting Decryption Code View
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-8 shadow-2xl max-w-md mx-auto">
-      <div className="text-center mb-8">
-        <div className="inline-flex items-center justify-center w-12 h-12 bg-amber-500/10 text-amber-500 rounded-full mb-4">
-          <Lock size={24} />
-        </div>
-        <h2 className="text-2xl font-bold text-white mb-2">Encrypted Payload Found</h2>
-        <p className="text-zinc-400 text-sm">
-          Enter the access code provided by the sender to decrypt this secret locally in your browser.
+    <div className="w-full max-w-2xl mx-auto mt-4">
+      <div className="text-center mb-10">
+        <p className="text-xs font-bold text-[#3733A5] tracking-widest uppercase mb-4">
+          01 / Verify Invitation
+        </p>
+        <h2 className="text-4xl font-extrabold text-[#1a1a1a] mb-3 tracking-tight">Enter access code</h2>
+        <p className="text-gray-500 text-sm font-medium">
+          This private secret is waiting for the person who received its link and code.
         </p>
       </div>
 
-      <form onSubmit={handleDecrypt} className="space-y-6">
-        <div>
-          <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2 text-center">
-            Access Code
-          </label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-500">
-              <Key size={18} />
+      <div className="space-y-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-[#E5E7EB] p-8 pb-10">
+          <form onSubmit={handleDecrypt} className="space-y-4">
+            <div className="flex items-center gap-3 mb-4 text-[#3733A5]">
+              <div className="p-2 bg-[#EEF2FF] rounded-lg">
+                <Lock size={20} />
+              </div>
+              <label className="text-xs font-bold uppercase tracking-widest">
+                Access Code
+              </label>
             </div>
-            <input
-              type="text"
-              autoFocus
-              required
-              className={`w-full bg-zinc-950 border ${
-                decryptError ? 'border-red-500/50 focus:ring-red-500/50' : 'border-zinc-800 focus:ring-emerald-500/50 focus:border-emerald-500'
-              } rounded-lg pl-10 pr-4 py-3 text-center font-mono font-bold text-xl tracking-widest text-zinc-100 placeholder-zinc-700 focus:outline-none focus:ring-2 uppercase transition-all`}
-              placeholder="e.g. K7X9QPMN"
-              value={accessCode}
-              onChange={(e) => {
-                setAccessCode(e.target.value);
-                setDecryptError('');
-              }}
-            />
-          </div>
-          {decryptError && (
-            <p className="text-red-400 text-xs text-center mt-3 animate-pulse">
-              {decryptError}
+            
+            <div className="flex items-center border border-[#E5E7EB] rounded-xl p-1.5 focus-within:border-[#3733A5] focus-within:ring-1 focus-within:ring-[#3733A5] transition-all">
+              <input
+                type="text"
+                autoFocus
+                required
+                className="flex-1 bg-transparent px-4 py-3 text-[#1a1a1a] placeholder-gray-400 font-mono text-sm focus:outline-none"
+                placeholder="e.g. 7K4P — enter code"
+                value={accessCode}
+                onChange={(e) => {
+                  setAccessCode(e.target.value);
+                  setDecryptError('');
+                }}
+              />
+              <button
+                type="submit"
+                disabled={isDecrypting || !accessCode.trim()}
+                className="flex items-center gap-2 bg-[#3733A5] hover:bg-[#2B2785] disabled:opacity-50 text-white font-bold py-3 px-6 rounded-lg transition-colors text-xs"
+              >
+                {isDecrypting ? 'Decrypting...' : (
+                  <>
+                    VIEW SECRET <ArrowUpRight size={16} className="opacity-80" />
+                  </>
+                )}
+              </button>
+            </div>
+            {decryptError && (
+              <p className="text-red-500 text-xs font-bold ml-2">
+                {decryptError}
+              </p>
+            )}
+            <p className="text-xs text-gray-400 flex items-center gap-1.5 mt-2 ml-1">
+              <span className="w-3 h-3 rounded-full border border-gray-300 flex items-center justify-center text-[8px] font-bold text-gray-400">i</span>
+              The code is case-sensitive and can only unlock this private link.
             </p>
-          )}
+          </form>
         </div>
 
-        <button
-          type="submit"
-          disabled={isDecrypting || !accessCode.trim()}
-          className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-600/50 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg transition-colors text-sm"
-        >
-          <Unlock size={18} />
-          {isDecrypting ? 'Decrypting...' : 'Decrypt Secret'}
-        </button>
-      </form>
+        {/* Message / File Preview Box */}
+        <div className="bg-[#FAFAFA] rounded-2xl border border-[#E5E7EB] p-6 opacity-60 pointer-events-none relative overflow-hidden">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-2 text-gray-400">
+              <File size={16} />
+              <span className="text-xs font-bold tracking-widest uppercase">Message / File</span>
+            </div>
+            <div className="flex items-center gap-1.5 bg-gray-200 text-gray-500 px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase">
+              <span className="w-1.5 h-1.5 bg-gray-400 rounded-full"></span> Locked - Awaiting code
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div className="h-32 bg-white border border-gray-200 rounded-lg flex items-center justify-center">
+              <Lock className="text-gray-300" size={24} />
+            </div>
+            <div className="h-32 bg-white border border-gray-200 rounded-lg p-4 flex flex-col justify-between relative overflow-hidden">
+              <div>
+                <p className="text-[10px] font-bold text-[#3733A5] uppercase tracking-widest mb-2">After code is verified</p>
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
+                     <File size={14} className="text-gray-400" />
+                  </div>
+                  <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Photo / File Preview</span>
+                </div>
+              </div>
+              <Eye className="absolute right-4 bottom-4 text-gray-200" size={32} />
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

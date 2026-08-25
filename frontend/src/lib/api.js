@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
 export async function createPaste({ ciphertext, iv, salt, maxViews, expiresInSeconds }) {
   const response = await fetch(`${API_BASE}/paste`, {
@@ -80,41 +80,3 @@ export async function deletePaste(id, adminToken) {
   return response.json();
 }
 
-export async function getAnalytics(id, token) {
-  const response = await fetch(`${API_BASE}/paste/${id}/analytics?token=${encodeURIComponent(token)}`);
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    const err = new Error(errorData.detail || 'Failed to load security analytics.');
-    err.status = response.status;
-    throw err;
-  }
-
-  return response.json();
-}
-
-export async function toggleLock(id, token) {
-  const response = await fetch(`${API_BASE}/paste/${id}/toggle-lock?token=${encodeURIComponent(token)}`, {
-    method: 'POST',
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.detail || 'Failed to toggle lock status.');
-  }
-
-  return response.json();
-}
-
-export async function deletePaste(id, token) {
-  const response = await fetch(`${API_BASE}/paste/${id}?token=${encodeURIComponent(token)}`, {
-    method: 'DELETE',
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.detail || 'Failed to delete paste.');
-  }
-
-  return response.json();
-}
