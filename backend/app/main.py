@@ -38,6 +38,10 @@ app.add_middleware(
 # Paste routes
 app.include_router(paste_router)
 
+@app.get("/", tags=["System"])
+async def root():
+    """Root endpoint to verify the API is running."""
+    return {"message": "PrivateBin Modernization API is running. Visit /docs for API documentation."}
 
 @app.get("/health", tags=["System"])
 async def health_check():
