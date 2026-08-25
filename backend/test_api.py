@@ -138,11 +138,11 @@ def run_tests():
     check("Attempt 2: 1 remaining", f2.json()["attempts_remaining"] == 1)
 
     f3 = client.post(f"/paste/{fail_id}/report-failure")
-    check("Attempt 3: burned=True", f3.json()["burned"] is True)
+    check("Attempt 3: locked=True", f3.json()["locked"] is True)
     check("Attempt 3: 0 remaining", f3.json()["attempts_remaining"] == 0)
 
     r = client.get(f"/paste/{fail_id}")
-    check("Auto-burned paste is 404", r.status_code == 404)
+    check("Locked paste is 403", r.status_code == 403)
     print()
 
     # -----------------------------------------------------------------------

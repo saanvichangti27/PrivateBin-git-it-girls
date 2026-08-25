@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { generateAccessCode, encryptFull } from '../lib/crypto';
 import { createPaste } from '../lib/api';
-import { Copy, Check, Lock, ExternalLink } from 'lucide-react';
+import { Copy, Check, Lock, BarChart } from 'lucide-react';
+import Dashboard from './Dashboard';
 
 export default function CreatePaste() {
   const [secret, setSecret] = useState('');
@@ -9,7 +10,7 @@ export default function CreatePaste() {
   const [expiresIn, setExpiresIn] = useState('0'); // 0 = never
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [createdData, setCreatedData] = useState(null); // { id, code, link }
+  const [createdData, setCreatedData] = useState(null);
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
 
@@ -25,8 +26,8 @@ export default function CreatePaste() {
       // 2. Encrypt the secret locally
       const { ciphertext, iv, salt } = await encryptFull(secret, code);
 
-      // 3. Send encrypted data to (mock) backend
-      const { id } = await createPaste({
+      // 3. Send encrypted data to backend
+      const { id, admin_token } = await createPaste({
         ciphertext,
         iv,
         salt,
@@ -35,7 +36,7 @@ export default function CreatePaste() {
       });
 
       const link = `${window.location.origin}/view/${id}`;
-      setCreatedData({ id, code, link });
+      setCreatedData({ id, code, link, admin_token });
     } catch (err) {
       console.error("Error creating paste:", err);
       alert("Something went wrong creating your secure link.");
@@ -101,6 +102,10 @@ export default function CreatePaste() {
           </div>
         </div>
 
+        <div className="mt-8 pt-6 border-t border-zinc-800">
+          <Dashboard pasteId={createdData.id} adminTokenProp={createdData.admin_token} />
+        </div>
+
         <div className="mt-8 pt-6 border-t border-zinc-800 text-center">
           <button
             onClick={() => { setSecret(''); setCreatedData(null); }}
@@ -118,7 +123,7 @@ export default function CreatePaste() {
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
           <label htmlFor="secret" className="block text-sm font-medium text-zinc-300 mb-2">
-            Your Secret
+            Your Secret Message
           </label>
           <textarea
             id="secret"
@@ -131,7 +136,7 @@ export default function CreatePaste() {
             required
           />
         </div>
-
+        
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-medium text-zinc-300 mb-2">

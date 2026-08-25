@@ -54,6 +54,9 @@ export default function ViewPaste() {
         if (report.burned) {
           setFetchError(report.message || 'Paste burned permanently due to excessive failed decryption attempts.');
           setEncryptedData(null); // Clear data so it shows the error view
+        } else if (report.locked) {
+          setFetchError(report.message || 'Paste locked temporarily due to excessive failed decryption attempts.');
+          setEncryptedData(null);
         } else {
           setDecryptError(`Incorrect access code. ${report.attempts_remaining} attempts remaining.`);
         }
@@ -80,7 +83,7 @@ export default function ViewPaste() {
     );
   }
 
-  // Handle Fetch Errors (Expired, Not Found, View Limit)
+  // Handle Fetch Errors (Expired, Not Found, View Limit, Locked)
   if (fetchError) {
     return (
       <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-8 shadow-2xl text-center">

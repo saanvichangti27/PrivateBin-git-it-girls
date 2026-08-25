@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import CreatePaste from './pages/CreatePaste';
 import ViewPaste from './pages/ViewPaste';
+import Dashboard from './pages/Dashboard';
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
             <Routes>
               <Route path="/" element={<CreatePaste />} />
               <Route path="/view/:id" element={<ViewPaste />} />
+              <Route path="/dashboard/:id" element={<Dashboard />} />
             </Routes>
           </main>
         </div>

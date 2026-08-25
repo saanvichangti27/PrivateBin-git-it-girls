@@ -10,12 +10,16 @@ from slowapi.errors import RateLimitExceeded
 
 from app.routes.paste import router as paste_router, limiter
 from app.redis_client import get_redis
+from app.middleware.blocklist import BlocklistMiddleware
 
 app = FastAPI(
     title="PrivateBin Modernization API",
     description="FastAPI + Redis Backend for Secure Client-Side Secret Sharing",
     version="1.0.0",
 )
+
+# Register blocklist middleware BEFORE rate limiter so blocked IPs don't even use tokens
+app.add_middleware(BlocklistMiddleware)
 
 # Register slowapi limiter and rate-limit exceeded handler.
 app.state.limiter = limiter
