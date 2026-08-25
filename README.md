@@ -1,4 +1,4 @@
-# PrivateBin Modernized 🔐
+# PrivateBin 🔐
 
 A secure, zero-knowledge, and modern interpretation of PrivateBin built with a contemporary tech stack. This platform allows users to share sensitive text and files online with robust access controls, client-side encryption, and administrative insight.
 
