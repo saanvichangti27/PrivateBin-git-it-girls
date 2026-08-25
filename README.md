@@ -8,23 +8,28 @@ Unlike standard PrivateBin, which stores decryption keys in the URL fragment, th
 
 ## 🌟 Key Features
 
-*   **Zero-Knowledge Client-Side Crypto:** Encryption/decryption is performed completely in the user's browser using the native WebCrypto API (AES-GCM 256-bit).
-*   **Out-of-Band Key Delivery:** Shareable links contain only the paste ID. The access code must be shared separately out-of-band, rendering leaked URLs useless on their own.
-*   **Time-to-Live (TTL) Expiration:** Define paste longevity (1 hour, 1 day,etc), powered by Redis's native TTL key expiration.
-*   **Burn-After-Reading & View Limits:** Configure the maximum number of times a paste can be retrieved. The secret payload is automatically scrubbed once the view limit is reached.
-*   **Brute-Force & Abuse Mitigation:**
-    *   **Burn Threshold:** Automated paste locking if decryption failures (wrong access codes) exceed the user-defined threshold.
-    *   **IP Blocklist Middleware:** Automatic 30-minute block list for client IPs with excessive failed attempts to prevent global scraping or scanning.
-*   **Creator Analytics & Status Dashboard:** Track paste status  view counts, failed decryption attempts, and detailed GDPR-compliant access logs with anonymized IP hashes and approximate geo-location.
-*   **Hybrid Storage Engine:** Utilizes Redis for high-performance atomic operations with an automatic, thread-safe in-memory fallback for local development if Redis is unavailable.
-*   **Strict CSP:** Configured via custom HTTP headers and HTML `<meta>` tags. Script, style, and connect sources are strictly limited to prevent third-party asset injections and data exfiltration.
-*   **Subresource Integrity (SRI):** Integrated via the `vite-plugin-sri` plugin. It automatically generates cryptographic hashes (`integrity="..."`) for built JavaScript assets and stylesheets, ensuring the browser refuses to load tampered resources.
+* **Zero-Knowledge Architecture:** AES-256-GCM encryption happens completely client-side.
+* **Out-of-Band Key Delivery:** Shareable links don't contain the password. Leaked URLs are useless on their own.
+* **Self-Destruct & Time Limits:** Secrets automatically burn after a set number of views or a specific time limit.
+* **Abuse Protection:** Secrets lock automatically after too many failed decryption attempts, and suspicious IPs are temporarily blocked to prevent brute-force attacks.
+* **Security Dashboard:** Track real-time analytics, view counts, and failed attempts for the secrets you create.
+* **Hardened Frontend:** Built with strict Content-Security-Policy (CSP) headers and Subresource Integrity (SRI) to prevent third-party tampering.
+
+---
+
+## 🔐 Security & Cryptographic Model
+
+The application strictly preserves a zero-knowledge security standard by encrypting everything locally before it leaves your device:
+1. **Key Derivation:** Your 8-character access code is salted and stretched (PBKDF2, 100k iterations) into a secure 256-bit AES-GCM key.
+2. **Encryption:** The plaintext and files are encrypted entirely within your browser.
+3. **Transmission & Decryption:** Only the encrypted ciphertext is sent to the server. To read the secret, the recipient must have the out-of-band access code to decrypt it locally. The server never sees your raw data.
+
 ---
 
 ## 🛠️ Tech Stack
 
 *   **Frontend:** React (Vite) + Tailwind CSS
-*   **Backend:** FastAPI (Python) + Uvicorn + SlowAPI (Rate-limiting) + HTTPX (IP lookup)
+*   **Backend:** FastAPI (Python) + Uvicorn + SlowAPI
 *   **Database:** Redis (JSON-document model)
 *   **Crypto:** Browser-native WebCrypto API
 
@@ -34,47 +39,19 @@ Unlike standard PrivateBin, which stores decryption keys in the URL fragment, th
 
 ```
 ├── backend/
-│   ├── app/
-│   │   ├── middleware/        # Starlette middlewares (IP blocklists, security)
-│   │   ├── routes/            # FastAPI routers (paste, analytics, lock control)
-│   │   ├── id_generator.py    # Random URL-safe paste ID generator
-│   │   ├── main.py            # FastAPI main application & CORS setup
-│   │   ├── redis_client.py    # Redis wrapper & in-memory fallback store
-│   │   ├── schemas.py         # Pydantic data schemas
-│   │   └── security.py        # IP hashing, log formatting, and blocklist logic
-│   ├── requirements.txt       # Python dependencies
-│   └── test_api.py            # API integration tests
+│   ├── app/               # FastAPI routes, middleware, and Redis integration
+│   └── requirements.txt   # Python dependencies
 │
 ├── frontend/
 │   ├── src/
-│   │   ├── lib/
-│   │   │   ├── api.js         # API client & request wrappers
-│   │   │   └── crypto.js      # Browser WebCrypto AES-GCM & PBKDF2 implementation
-│   │   ├── pages/
-│   │   │   ├── CreatePaste.jsx # Paste creation form
-│   │   │   ├── ViewPaste.jsx   # Client-side decryption and paste reader
-│   │   │   └── Dashboard.jsx   # Creator statistics, analytics charts & access logs
-│   │   ├── App.jsx            # React router and application layout
-│   │   └── main.jsx
-│   ├── index.html
-│   ├── tailwind.config.js     # Tailwind setup
-│   └── vite.config.js         # Vite configuration with CSP & SRI plugin hooks
+│   │   ├── lib/           # API client & WebCrypto implementation
+│   │   ├── pages/         # React views (Create, View, Dashboard)
+│   │   └── App.jsx        # Routing and layout
+│   └── vite.config.js     # Vite configuration
 ```
 
 ---
 
-## 🔐 Security & Cryptographic Model
+## 🎯 Conclusion
 
-The application strictly preserves the zero-knowledge security standard by using browser-based WebCrypto operations:
-
-1.  **Key Derivation (PBKDF2):**
-    The user-provided 8-character human-readable access code (avoiding ambiguous characters like `0`, `O`, `1`, `I`) is combined with a random client-generated 16-byte salt and stretched using PBKDF2 (100,000 iterations, SHA-256) to derive a 256-bit AES-GCM key.
-2.  **Encryption (AES-256-GCM):**
-    The plaintext is encrypted with the derived key and a unique 12-byte initialization vector (IV).
-3.  **Transmission:**
-    Only the `ciphertext`, `iv`, and `salt` (non-secret) are sent to the FastAPI backend. The server stores these fields in Redis.
-4.  **Decryption:**
-    When reading the paste, the recipient receives the `ciphertext`, `iv`, and `salt` from the API. The recipient inputs the out-of-band access code, and the key is re-derived to decrypt the payload entirely in-browser.
-
----
-
+This project brings modern design to the concept of zero-knowledge secret sharing. Whether you are sharing API keys, passwords, or sensitive documents, this platform ensures your data remains fundamentally yours—Share What Matters. Privately.
