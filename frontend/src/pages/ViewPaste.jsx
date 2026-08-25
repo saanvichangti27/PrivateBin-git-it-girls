@@ -233,6 +233,12 @@ export default function ViewPaste() {
               type="text"
               autoFocus
               required
+              autoComplete="off"
+              onPaste={(e) => {
+                e.preventDefault();
+                setDecryptError('Pasting is disabled. Please type the code manually.');
+              }}
+              onDrop={(e) => e.preventDefault()}
               className={`w-full bg-custom-bg border ${decryptError ? 'border-custom-destructive/50 focus:ring-custom-destructive/50' : 'border-custom-border focus:ring-custom-accent/50 focus:border-custom-accent'} rounded-lg pl-10 pr-4 py-3 text-center font-mono font-bold text-xl tracking-widest text-custom-textPrimary placeholder-custom-textSecondary focus:outline-none focus:ring-2 uppercase transition-all`}
               placeholder="e.g. K7X9QPMN"
               value={accessCode}

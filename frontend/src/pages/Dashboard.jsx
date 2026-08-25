@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useLocation, Link } from 'react-router-dom';
+import { useParams, useLocation } from 'react-router-dom';
 import { getAnalytics, unlockPaste, deletePaste } from '../lib/api';
 import { BarChart2, ShieldAlert, CheckCircle2, Clock, Users, Unlock, Trash2, RefreshCcw } from 'lucide-react';
 
@@ -119,9 +119,6 @@ export default function Dashboard({ pasteId, adminTokenProp }) {
         </div>
         <h2 className="text-2xl font-semibold text-custom-textPrimary mb-3">Access Denied</h2>
         <p className="text-custom-textSecondary mb-8 text-sm">{error}</p>
-        <Link to="/" className="text-blue-600 hover:text-blue-500 font-medium transition-colors text-sm uppercase tracking-wide">
-          Return Home &rarr;
-        </Link>
       </div>
     );
   }

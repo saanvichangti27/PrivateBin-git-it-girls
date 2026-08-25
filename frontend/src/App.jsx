@@ -23,7 +23,7 @@ function App() {
             </h1>
             
             <p className="text-custom-textSecondary text-[10px] font-bold tracking-[0.15em] uppercase">
-              Recipient Access / One-time Secret
+              Privacy, Without Compromise.
             </p>
           </Link>
         </header>
@@ -36,8 +36,8 @@ function App() {
           </Routes>
         </main>
 
-        <footer className="w-full text-center py-6 border-t border-custom-border mt-auto">
-          <p className="text-xs text-custom-textSecondary tracking-widest uppercase">
+        <footer className="w-full text-center py-8 border-t border-custom-border mt-auto">
+          <p className="text-sm text-custom-textSecondary tracking-wide">
             Powered by private bin &bull; Secure Encrypted Sharing
           </p>
         </footer>

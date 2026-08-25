@@ -112,7 +112,7 @@ export default function CreatePaste() {
         iv,
         salt,
         maxViews: maxViews === '0' ? null : Number(maxViews),
-        expiresInSeconds: expiresIn === '0' ? null : Number(expiresIn)
+        expiresInSeconds: expiresIn === '0' ? null : Number(expiresIn) * 60
       });
 
       const link = `${window.location.origin}/view/${id}`;
@@ -275,7 +275,7 @@ export default function CreatePaste() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-medium text-custom-textPrimary mb-2">
-              Self-Destruct (Views)
+              Max View Count
             </label>
             <input
               type="number"
@@ -290,7 +290,7 @@ export default function CreatePaste() {
 
           <div>
             <label className="block text-sm font-medium text-custom-textPrimary mb-2">
-              Expiration Time (Seconds)
+              Expiration Time (Minutes)
             </label>
             <input
               type="number"
