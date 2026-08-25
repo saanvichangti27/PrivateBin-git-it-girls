@@ -114,8 +114,9 @@ export async function deriveKeyFromCode(accessCode, salt) {
  * @returns {Promise<{iv: string, ciphertext: string}>} Object containing the base64-encoded IV and ciphertext.
  */
 export async function encryptSecret(plaintext, key) {
-  if (typeof plaintext !== 'string') {
-    throw new Error('Plaintext must be a string');
+  const isBuffer = plaintext instanceof ArrayBuffer || ArrayBuffer.isView(plaintext);
+  if (typeof plaintext !== 'string' && !isBuffer) {
+    throw new Error('Plaintext must be a string or ArrayBuffer/TypedArray');
   }
   if (!(key instanceof CryptoKey)) {
     throw new Error('Key must be a valid CryptoKey');
@@ -125,8 +126,13 @@ export async function encryptSecret(plaintext, key) {
   const iv = new Uint8Array(12);
   crypto.getRandomValues(iv);
 
-  const encoder = new TextEncoder();
-  const plaintextBuffer = encoder.encode(plaintext);
+  let plaintextBuffer;
+  if (typeof plaintext === 'string') {
+    const encoder = new TextEncoder();
+    plaintextBuffer = encoder.encode(plaintext);
+  } else {
+    plaintextBuffer = plaintext;
+  }
 
   const ciphertextBuffer = await crypto.subtle.encrypt(
     {
@@ -152,7 +158,7 @@ export async function encryptSecret(plaintext, key) {
  * @returns {Promise<string>} The decrypted plaintext string.
  * @throws {Error} Clear, catchable error if decryption or integrity validation fails.
  */
-export async function decryptSecret(ciphertextBase64, ivBase64, key) {
+export async function decryptSecret(ciphertextBase64, ivBase64, key, returnBuffer = false) {
   if (typeof ciphertextBase64 !== 'string' || typeof ivBase64 !== 'string') {
     throw new Error('Ciphertext and IV must be base64 strings');
   }
@@ -179,6 +185,9 @@ export async function decryptSecret(ciphertextBase64, ivBase64, key) {
       ciphertext
     );
 
+    if (returnBuffer) {
+      return decryptedBuffer;
+    }
     const decoder = new TextDecoder();
     return decoder.decode(decryptedBuffer);
   } catch (err) {
@@ -221,7 +230,7 @@ export async function encryptFull(plaintext, accessCode) {
  * @param {string} accessCode - The access code.
  * @returns {Promise<string>} The decrypted plaintext string.
  */
-export async function decryptFull(ciphertextBase64, ivBase64, saltBase64, accessCode) {
+export async function decryptFull(ciphertextBase64, ivBase64, saltBase64, accessCode, returnBuffer = false) {
   let salt;
   try {
     salt = new Uint8Array(base64ToBuffer(saltBase64));
@@ -233,7 +242,7 @@ export async function decryptFull(ciphertextBase64, ivBase64, saltBase64, access
   const { key } = await deriveKeyFromCode(accessCode, salt);
 
   // Decrypt using AES-GCM
-  return await decryptSecret(ciphertextBase64, ivBase64, key);
+  return await decryptSecret(ciphertextBase64, ivBase64, key, returnBuffer);
 }
 
 // Development Self-Test Block (runs automatically when imported/evaluated in development environments)

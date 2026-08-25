@@ -1,7 +1,8 @@
 import React, { useState, useRef } from 'react';
 import { generateAccessCode, encryptFull } from '../lib/crypto';
 import { createPaste } from '../lib/api';
-import { Copy, Check, Lock, Paperclip, X, File } from 'lucide-react';
+import { Copy, Check, Lock, Paperclip, X, File, BarChart } from 'lucide-react';
+import Dashboard from './Dashboard';
 
 const readFileAsDataURL = (file) => {
   return new Promise((resolve, reject) => {
@@ -21,7 +22,7 @@ export default function CreatePaste() {
   const fileInputRef = useRef(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [createdData, setCreatedData] = useState(null); // { id, code, link }
+  const [createdData, setCreatedData] = useState(null);
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
 
@@ -106,7 +107,7 @@ export default function CreatePaste() {
       const { ciphertext, iv, salt } = await encryptFull(payloadToEncrypt, code);
 
       // 4. Send encrypted data to backend
-      const { id } = await createPaste({
+      const { id, admin_token } = await createPaste({
         ciphertext,
         iv,
         salt,
@@ -115,7 +116,7 @@ export default function CreatePaste() {
       });
 
       const link = `${window.location.origin}/view/${id}`;
-      setCreatedData({ id, code, link });
+      setCreatedData({ id, code, link, admin_token });
     } catch (err) {
       console.error("Error creating paste:", err);
       alert("Something went wrong creating your secure link.");
@@ -151,11 +152,11 @@ export default function CreatePaste() {
               <span className="flex-1 font-mono text-emerald-400 text-sm overflow-hidden text-ellipsis whitespace-nowrap">
                 {createdData.link}
               </span>
-              <button 
+              <button
                 onClick={() => copyToClipboard(createdData.link, setCopiedLink)}
                 className="ml-4 flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-4 py-2 rounded-md transition-colors text-sm font-medium"
               >
-                {copiedLink ? <Check size={16} className="text-emerald-400"/> : <Copy size={16} />}
+                {copiedLink ? <Check size={16} className="text-emerald-400" /> : <Copy size={16} />}
                 {copiedLink ? 'Copied' : 'Copy'}
               </button>
             </div>
@@ -170,17 +171,21 @@ export default function CreatePaste() {
               <span className="flex-1 font-mono font-bold text-amber-400 text-xl tracking-widest">
                 {createdData.code}
               </span>
-              <button 
+              <button
                 onClick={() => copyToClipboard(createdData.code, setCopiedCode)}
                 className="ml-4 flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-4 py-2 rounded-md transition-colors text-sm font-medium"
               >
-                {copiedCode ? <Check size={16} className="text-emerald-400"/> : <Copy size={16} />}
+                {copiedCode ? <Check size={16} className="text-emerald-400" /> : <Copy size={16} />}
                 {copiedCode ? 'Copied' : 'Copy'}
               </button>
             </div>
           </div>
         </div>
-        
+
+        <div className="mt-8 pt-6 border-t border-zinc-800">
+          <Dashboard pasteId={createdData.id} adminTokenProp={createdData.admin_token} />
+        </div>
+
         <div className="mt-8 pt-6 border-t border-zinc-800 text-center">
           <button 
             onClick={() => { setSecret(''); setSelectedFiles([]); setCreatedData(null); }}
@@ -198,7 +203,7 @@ export default function CreatePaste() {
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
           <label htmlFor="secret" className="block text-sm font-medium text-zinc-300 mb-2">
-            Your Secret
+            Your Secret Message
           </label>
           <textarea
             id="secret"
@@ -211,7 +216,6 @@ export default function CreatePaste() {
             required={selectedFiles.length === 0}
           />
         </div>
-
         {/* File Share Attachment */}
         <div>
           <label className="block text-sm font-medium text-zinc-300 mb-2">

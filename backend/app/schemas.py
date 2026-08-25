@@ -20,6 +20,7 @@ class PasteCreate(BaseModel):
 
 class PasteCreateResponse(BaseModel):
     id: str
+    admin_token: str
     expires_at: str
     remaining_views: Optional[int] = None
     burn_threshold: int
@@ -32,9 +33,30 @@ class PasteResponse(BaseModel):
     salt: str
     remaining_views: int
     expires_at: str
+    status: str = "active"
 
 
 class FailureReportResponse(BaseModel):
     burned: bool
+    locked: bool = False
     attempts_remaining: int
     message: str
+
+
+class AccessLog(BaseModel):
+    timestamp: str
+    ip_hash: str
+    user_agent: str
+    success: bool
+
+from typing import List
+
+class AnalyticsResponse(BaseModel):
+    id: str
+    status: str
+    created_at: str
+    expires_at: str
+    remaining_views: Optional[int]
+    total_views: int
+    failed_attempts: int
+    logs: List[AccessLog]
