@@ -106,20 +106,20 @@ export default function Dashboard({ pasteId, adminTokenProp }) {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-48">
-        <div className="animate-pulse text-zinc-500 font-medium">Loading analytics...</div>
+        <div className="animate-pulse text-custom-textSecondary text-sm tracking-widest uppercase">Loading analytics...</div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-8 shadow-2xl text-center">
-        <div className="inline-flex items-center justify-center w-16 h-16 bg-red-500/10 text-red-400 rounded-full mb-6">
-          <ShieldAlert size={32} />
+      <div className="bg-custom-card border border-custom-border rounded-lg p-10 shadow-sm text-center max-w-lg mx-auto">
+        <div className="inline-flex items-center justify-center w-16 h-16 bg-custom-destructive/10 text-custom-destructive rounded-full mb-6">
+          <ShieldAlert size={32} strokeWidth={1.5} />
         </div>
-        <h2 className="text-2xl font-bold text-white mb-2">Access Denied</h2>
-        <p className="text-zinc-400 mb-8">{error}</p>
-        <Link to="/" className="text-emerald-500 hover:text-emerald-400 font-medium transition-colors">
+        <h2 className="text-2xl font-semibold text-custom-textPrimary mb-3">Access Denied</h2>
+        <p className="text-custom-textSecondary mb-8 text-sm">{error}</p>
+        <Link to="/" className="text-blue-600 hover:text-blue-500 font-medium transition-colors text-sm uppercase tracking-wide">
           Return Home &rarr;
         </Link>
       </div>
@@ -130,84 +130,89 @@ export default function Dashboard({ pasteId, adminTokenProp }) {
   const hasSuspiciousActivity = analytics?.failed_attempts > 0 || isLocked;
 
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 sm:p-8 shadow-2xl animate-in fade-in zoom-in-95 duration-300">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-            <BarChart2 className="text-blue-500" />
-            Security Dashboard
-          </h2>
-          <p className="text-zinc-400 text-sm mt-1">
-            Paste ID: <span className="font-mono text-zinc-300">{analytics.id}</span>
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className={`px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider ${isLocked ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'}`}>
-            {analytics.status}
-          </span>
-          {isLocked && (
+    <div className="animate-in fade-in zoom-in-95 duration-300 max-w-4xl mx-auto">
+      <div className="bg-custom-card border border-custom-border rounded-lg p-6 sm:p-10 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.05)] mb-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10 gap-6">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <h2 className="text-lg font-semibold text-custom-textPrimary tracking-tight">
+                Security Dashboard
+              </h2>
+              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest ${isLocked ? 'bg-custom-destructive/10 text-custom-destructive border border-custom-destructive/30' : 'bg-custom-accent/10 text-custom-accent border border-custom-accent/30'}`}>
+                {analytics.status}
+              </span>
+            </div>
+            <p className="text-custom-textSecondary text-sm flex items-center gap-2">
+              <span className="uppercase tracking-widest text-[10px] font-semibold text-custom-textSecondary">ID</span> 
+              <span className="font-mono text-gray-600 bg-custom-bg px-2 py-0.5 rounded border border-custom-border text-xs">{analytics.id}</span>
+            </p>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            {isLocked && (
+              <button
+                onClick={handleUnlock}
+                disabled={isUnlocking || isBurning}
+                className="flex items-center gap-2 bg-custom-card hover:bg-custom-bg text-custom-textPrimary px-4 py-2 rounded-md transition-colors text-xs font-bold uppercase tracking-wider border border-custom-border shadow-sm"
+              >
+                <Unlock size={14} strokeWidth={2} />
+                {isUnlocking ? 'Unlocking...' : 'Unlock'}
+              </button>
+            )}
             <button
-              onClick={handleUnlock}
-              disabled={isUnlocking || isBurning}
-              className="flex items-center gap-1.5 bg-zinc-800 hover:bg-zinc-700 text-white px-3 py-1.5 rounded-md transition-colors text-sm font-medium border border-zinc-700"
+              onClick={fetchAnalytics}
+              disabled={isLoading}
+              className="flex items-center justify-center bg-custom-card hover:bg-custom-bg text-custom-textSecondary px-3 py-2 rounded-md transition-colors border border-custom-border shadow-sm"
+              title="Refresh Analytics"
             >
-              <Unlock size={14} />
-              {isUnlocking ? 'Unlocking...' : 'Unlock'}
+              <RefreshCcw size={14} className={isLoading ? 'animate-spin' : ''} />
             </button>
-          )}
-          <button
-            onClick={fetchAnalytics}
-            disabled={isLoading}
-            className="flex items-center gap-1.5 bg-zinc-800 hover:bg-zinc-700 text-white px-3 py-1.5 rounded-md transition-colors text-sm font-medium border border-zinc-700"
-            title="Refresh Analytics"
-          >
-            <RefreshCcw size={14} className={isLoading ? 'animate-spin' : ''} />
-          </button>
-          <button
-            onClick={handleBurn}
-            disabled={isBurning}
-            className="flex items-center gap-1.5 bg-red-600 hover:bg-red-500 text-white px-3 py-1.5 rounded-md transition-colors text-sm font-medium border border-red-700 shadow-[0_0_15px_rgba(220,38,38,0.3)]"
-          >
-            <Trash2 size={14} />
-            {isBurning ? 'Burning...' : 'Burn Secret'}
-          </button>
+            <button
+              onClick={handleBurn}
+              disabled={isBurning}
+              className="flex items-center gap-2 bg-custom-card hover:bg-custom-destructive/10 text-custom-destructive px-4 py-2 rounded-md transition-colors text-xs font-bold uppercase tracking-wider border border-custom-destructive/30 hover:border-custom-destructive/50 shadow-sm"
+            >
+              <Trash2 size={14} strokeWidth={2} />
+              {isBurning ? 'Burning...' : 'Burn Secret'}
+            </button>
+          </div>
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-        <div className="bg-zinc-950 border border-zinc-800 rounded-lg p-4">
-          <div className="flex items-center gap-2 text-zinc-400 mb-2">
-            <Users size={16} />
-            <h3 className="text-sm font-semibold uppercase tracking-wider">Total Views</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-custom-bg border border-custom-border rounded-lg p-5">
+            <div className="flex items-center gap-2 text-custom-textSecondary mb-3">
+              <Users size={14} strokeWidth={2.5} />
+              <h3 className="text-[10px] font-bold uppercase tracking-widest">Total Views</h3>
+            </div>
+            <p className="text-xl font-semibold text-custom-textPrimary">{analytics.total_views}</p>
           </div>
-          <p className="text-3xl font-bold text-white">{analytics.total_views}</p>
-        </div>
-        <div className="bg-zinc-950 border border-zinc-800 rounded-lg p-4">
-          <div className="flex items-center gap-2 text-zinc-400 mb-2">
-            <Users size={16} />
-            <h3 className="text-sm font-semibold uppercase tracking-wider">Views Remaining</h3>
+          <div className="bg-custom-bg border border-custom-border rounded-lg p-5">
+            <div className="flex items-center gap-2 text-custom-textSecondary mb-3">
+              <Users size={14} strokeWidth={2.5} />
+              <h3 className="text-[10px] font-bold uppercase tracking-widest">Views Remaining</h3>
+            </div>
+            <p className="text-xl font-semibold text-custom-textPrimary">
+              {analytics.remaining_views === null ? 'Unlimited' : analytics.remaining_views}
+            </p>
           </div>
-          <p className="text-3xl font-bold text-white">
-            {analytics.remaining_views === null ? 'Unlimited' : analytics.remaining_views}
-          </p>
-        </div>
-        <div className="bg-zinc-950 border border-zinc-800 rounded-lg p-4">
-          <div className="flex items-center gap-2 text-zinc-400 mb-2">
-            <Clock size={16} />
-            <h3 className="text-sm font-semibold uppercase tracking-wider">Time Remaining</h3>
+          <div className="bg-custom-bg border border-custom-border rounded-lg p-5">
+            <div className="flex items-center gap-2 text-custom-textSecondary mb-3">
+              <Clock size={14} strokeWidth={2.5} />
+              <h3 className="text-[10px] font-bold uppercase tracking-widest">Time Remaining</h3>
+            </div>
+            <p className="text-xl font-semibold text-custom-textPrimary">
+              {timeRemaining}
+            </p>
           </div>
-          <p className="text-3xl font-bold text-white">
-            {timeRemaining}
-          </p>
-        </div>
-        <div className="bg-zinc-950 border border-zinc-800 rounded-lg p-4">
-          <div className="flex items-center gap-2 text-zinc-400 mb-2">
-            <ShieldAlert size={16} />
-            <h3 className="text-sm font-semibold uppercase tracking-wider">Suspicious Activity</h3>
+          <div className="bg-custom-bg border border-custom-border rounded-lg p-5">
+            <div className="flex items-center gap-2 text-custom-textSecondary mb-3">
+              <ShieldAlert size={14} strokeWidth={2.5} />
+              <h3 className="text-[10px] font-bold uppercase tracking-widest">Suspicious Activity</h3>
+            </div>
+            <p className={`text-xl font-semibold ${hasSuspiciousActivity ? 'text-custom-destructive' : 'text-custom-accent'}`}>
+              {hasSuspiciousActivity ? 'Detected' : 'None'}
+            </p>
           </div>
-          <p className={`text-3xl font-bold ${hasSuspiciousActivity ? 'text-red-400' : 'text-emerald-400'}`}>
-            {hasSuspiciousActivity ? 'Detected' : 'None'}
-          </p>
         </div>
       </div>
     </div>

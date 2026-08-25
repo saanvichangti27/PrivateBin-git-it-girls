@@ -4,12 +4,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta http-equiv="Content-Security-Policy"
-    content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://localhost:8000/ http://127.0.0.1:8000/ https://%2A.onrender.com/ https://privatebin-git-it-girls.onrender.com/; img-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self';">
+    content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' http://localhost:8000/ http://127.0.0.1:8000/ https://%2A.onrender.com/ https://privatebin-git-it-girls.onrender.com/; img-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self';">
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
   <title>Secure Secret Sharing</title>
 </head>
 
-<body class="bg-zinc-950 text-zinc-50 min-h-screen font-sans antialiased">
+<body class="bg-custom-bg text-custom-textPrimary min-h-screen font-sans antialiased">
   <div id="root"></div>
   <script type="module" src="/src/main.jsx"></script>
 </body>
