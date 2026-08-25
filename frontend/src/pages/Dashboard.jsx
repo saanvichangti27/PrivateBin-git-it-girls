@@ -12,6 +12,7 @@ export default function Dashboard({ pasteId, adminTokenProp }) {
   const adminToken = adminTokenProp || urlToken;
   
   const [analytics, setAnalytics] = useState(null);
+  const [timeRemaining, setTimeRemaining] = useState('...');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isUnlocking, setIsUnlocking] = useState(false);
@@ -36,6 +37,43 @@ export default function Dashboard({ pasteId, adminTokenProp }) {
     }
     fetchAnalytics();
   }, [id, adminToken]);
+
+  useEffect(() => {
+    if (!analytics) return;
+    if (!analytics.expires_at) {
+      setTimeRemaining('Never');
+      return;
+    }
+
+    const updateTime = () => {
+      const now = new Date();
+      const expires = new Date(analytics.expires_at);
+      const diff = expires - now;
+
+      if (diff <= 0) {
+        setTimeRemaining('Expired');
+        return;
+      }
+
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+      const mins = Math.floor((diff / 1000 / 60) % 60);
+
+      let parts = [];
+      if (days > 0) parts.push(`${days}d`);
+      if (hours > 0) parts.push(`${hours}h`);
+      if (mins > 0) parts.push(`${mins}m`);
+      if (parts.length === 0) {
+        const secs = Math.floor(diff / 1000);
+        parts.push(`${secs}s`);
+      }
+      setTimeRemaining(parts.join(' '));
+    };
+
+    updateTime();
+    const interval = setInterval(updateTime, 60000);
+    return () => clearInterval(interval);
+  }, [analytics]);
 
   const handleUnlock = async () => {
     try {
@@ -89,6 +127,7 @@ export default function Dashboard({ pasteId, adminTokenProp }) {
   }
 
   const isLocked = analytics?.status === 'locked';
+  const hasSuspiciousActivity = analytics?.failed_attempts > 0 || isLocked;
 
   return (
     <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 sm:p-8 shadow-2xl animate-in fade-in zoom-in-95 duration-300">
@@ -135,7 +174,7 @@ export default function Dashboard({ pasteId, adminTokenProp }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
         <div className="bg-zinc-950 border border-zinc-800 rounded-lg p-4">
           <div className="flex items-center gap-2 text-zinc-400 mb-2">
             <Users size={16} />
@@ -145,58 +184,31 @@ export default function Dashboard({ pasteId, adminTokenProp }) {
         </div>
         <div className="bg-zinc-950 border border-zinc-800 rounded-lg p-4">
           <div className="flex items-center gap-2 text-zinc-400 mb-2">
-            <ShieldAlert size={16} />
-            <h3 className="text-sm font-semibold uppercase tracking-wider">Failed Attempts</h3>
-          </div>
-          <p className="text-3xl font-bold text-red-400">{analytics.failed_attempts}</p>
-        </div>
-        <div className="bg-zinc-950 border border-zinc-800 rounded-lg p-4">
-          <div className="flex items-center gap-2 text-zinc-400 mb-2">
-            <Clock size={16} />
-            <h3 className="text-sm font-semibold uppercase tracking-wider">Remaining Views</h3>
+            <Users size={16} />
+            <h3 className="text-sm font-semibold uppercase tracking-wider">Views Remaining</h3>
           </div>
           <p className="text-3xl font-bold text-white">
             {analytics.remaining_views === null ? 'Unlimited' : analytics.remaining_views}
           </p>
         </div>
-      </div>
-
-      <div>
-        <h3 className="text-lg font-bold text-white mb-4">Access Logs</h3>
-        {analytics.logs && analytics.logs.length > 0 ? (
-          <div className="overflow-x-auto rounded-lg border border-zinc-800">
-            <table className="w-full text-left text-sm text-zinc-400">
-              <thead className="text-xs uppercase bg-zinc-950 border-b border-zinc-800">
-                <tr>
-                  <th className="px-4 py-3">Timestamp</th>
-                  <th className="px-4 py-3">IP Hash</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">User Agent</th>
-                </tr>
-              </thead>
-              <tbody>
-                {analytics.logs.reverse().map((log, idx) => (
-                  <tr key={idx} className="border-b border-zinc-800/50 bg-zinc-900/50 hover:bg-zinc-800/50">
-                    <td className="px-4 py-3 whitespace-nowrap">{new Date(log.timestamp).toLocaleString()}</td>
-                    <td className="px-4 py-3 font-mono text-xs">{log.ip_hash}</td>
-                    <td className="px-4 py-3">
-                      {log.success ? (
-                        <span className="flex items-center gap-1 text-emerald-400"><CheckCircle2 size={14}/> Success</span>
-                      ) : (
-                        <span className="flex items-center gap-1 text-red-400"><ShieldAlert size={14}/> Failed</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 truncate max-w-xs" title={log.user_agent}>{log.user_agent}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <div className="bg-zinc-950 border border-zinc-800 rounded-lg p-4">
+          <div className="flex items-center gap-2 text-zinc-400 mb-2">
+            <Clock size={16} />
+            <h3 className="text-sm font-semibold uppercase tracking-wider">Time Remaining</h3>
           </div>
-        ) : (
-          <div className="text-center py-8 bg-zinc-950 border border-zinc-800 rounded-lg">
-            <p className="text-zinc-500">No access logs yet.</p>
+          <p className="text-3xl font-bold text-white">
+            {timeRemaining}
+          </p>
+        </div>
+        <div className="bg-zinc-950 border border-zinc-800 rounded-lg p-4">
+          <div className="flex items-center gap-2 text-zinc-400 mb-2">
+            <ShieldAlert size={16} />
+            <h3 className="text-sm font-semibold uppercase tracking-wider">Suspicious Activity</h3>
           </div>
-        )}
+          <p className={`text-3xl font-bold ${hasSuspiciousActivity ? 'text-red-400' : 'text-emerald-400'}`}>
+            {hasSuspiciousActivity ? 'Detected' : 'None'}
+          </p>
+        </div>
       </div>
     </div>
   );

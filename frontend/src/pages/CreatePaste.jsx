@@ -277,33 +277,30 @@ export default function CreatePaste() {
             <label className="block text-sm font-medium text-zinc-300 mb-2">
               Self-Destruct (Views)
             </label>
-            <select
+            <input
+              type="number"
+              min="0"
               className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-3 text-zinc-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
               value={maxViews}
               onChange={(e) => setMaxViews(e.target.value)}
-            >
-              <option value="0">Unlimited Views</option>
-              <option value="1">1 View (Burn after reading)</option>
-              <option value="5">5 Views</option>
-              <option value="10">10 Views</option>
-            </select>
+              placeholder="0 for unlimited"
+            />
+            <p className="text-xs text-zinc-500 mt-1">0 for unlimited</p>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-zinc-300 mb-2">
-              Expiration Time
+              Expiration Time (Seconds)
             </label>
-            <select
+            <input
+              type="number"
+              min="0"
               className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-3 text-zinc-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
               value={expiresIn}
               onChange={(e) => setExpiresIn(e.target.value)}
-            >
-              <option value="0">Never Expire</option>
-              <option value="600">10 Minutes</option>
-              <option value="3600">1 Hour</option>
-              <option value="86400">1 Day</option>
-              <option value="604800">1 Week</option>
-            </select>
+              placeholder="0 for never expire"
+            />
+            <p className="text-xs text-zinc-500 mt-1">0 for never expire</p>
           </div>
         </div>
 
