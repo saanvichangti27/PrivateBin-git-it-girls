@@ -4,6 +4,7 @@ A secure, zero-knowledge, and modern interpretation of PrivateBin built with a c
 
 Unlike standard PrivateBin, which stores decryption keys in the URL fragment, this project uses a separate out-of-band **Access Code** model. This prevents the server from ever seeing the decryption secrets, even in URL access logs.
 
+(please note that the first time a link is getting created it takes some time to load the server, the next time onwards it becomes fast)
 ---
 
 ## 🌟 Key Features
